@@ -31,15 +31,38 @@ Aplicación web 100% local desarrollada para resolver la problemática de las pe
 ## 🚀 Cómo Ejecutar la Aplicación en Local
 
 ### Pasos:
-1. Abre tu terminal en la carpeta del proyecto:
+1. Instala las dependencias (una sola vez):
    ```bash
-   cd sistema-gestion-ropa
+   npm install
    ```
 2. Inicia el servidor de desarrollo:
    ```bash
    npm run dev
    ```
 3. Abre en tu navegador la dirección que indica la consola (usualmente `http://localhost:5173`).
+
+Otros comandos: `npm run build` (versión de producción) y `npm run lint` (revisión de código).
+
+---
+
+## 🗂️ Estructura del Proyecto
+
+```
+.
+├── docs/                    # Documentos del proyecto (propuesta e idea desarrollada)
+├── public/                  # Íconos estáticos
+├── src/
+│   ├── components/          # Pantallas: Dashboard, POS, Inventario, Ventas, Clientes, Proveedores, Cajeros...
+│   │   └── auth/            # Selector de acceso y login por rol
+│   ├── config/              # Menús y permisos por rol
+│   ├── feedback/            # Avisos y confirmaciones de la interfaz
+│   ├── services/            # Datos (storageService) y autenticación (authService)
+│   ├── utils/               # Utilidades (formato de fechas)
+│   ├── App.jsx
+│   └── main.jsx
+├── index.html
+└── package.json
+```
 
 ---
 
