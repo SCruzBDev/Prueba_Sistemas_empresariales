@@ -10,7 +10,6 @@ import {
   Banknote, 
   Smartphone, 
   AlertCircle,
-  Tag,
   User,
   ShoppingBag
 } from "lucide-react";

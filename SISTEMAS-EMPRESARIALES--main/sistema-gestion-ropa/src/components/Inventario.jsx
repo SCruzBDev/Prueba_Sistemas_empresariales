@@ -6,12 +6,10 @@ import {
   Edit, 
   Trash2, 
   AlertCircle, 
-  CheckCircle, 
   X, 
   Save, 
   Layers,
-  History,
-  Tag
+  History
 } from "lucide-react";
 import { 
   saveProducto, 

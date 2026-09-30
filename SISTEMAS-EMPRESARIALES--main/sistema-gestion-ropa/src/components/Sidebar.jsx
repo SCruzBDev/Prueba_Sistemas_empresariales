@@ -22,7 +22,7 @@ export default function Sidebar({
   const alertas = { stockBajoCount };
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800 select-none">
+    <aside className="w-64 md:h-screen md:sticky md:top-0 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800 select-none">
       
       {/* Brand Header */}
       <div className="p-5 border-b border-slate-800/80">
