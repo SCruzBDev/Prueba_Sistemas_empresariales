@@ -1,8 +1,10 @@
 ﻿import React, { useState } from "react";
 import { Truck, Plus, Search, Edit, Trash2, Phone, Mail, User, X, Save, ArrowDownCircle } from "lucide-react";
 import { saveProveedor, deleteProveedor } from "../services/storageService";
+import { useFeedback } from "../feedback/context";
 
 export default function Proveedores({ proveedores, onProveedoresUpdated, onOpenEntradaMercancia }) {
+  const { avisar, confirmar } = useFeedback();
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProveedor, setEditingProveedor] = useState(null);
@@ -46,13 +48,19 @@ export default function Proveedores({ proveedores, onProveedoresUpdated, onOpenE
     });
     setIsModalOpen(false);
     onProveedoresUpdated();
+    avisar(editingProveedor ? "Proveedor actualizado" : "Proveedor registrado");
   };
 
-  const handleDelete = (id, nombre) => {
-    if (window.confirm(`¿Eliminar al proveedor "${nombre}"?`)) {
-      deleteProveedor(id);
-      onProveedoresUpdated();
-    }
+  const handleDelete = async (id, nombre) => {
+    const ok = await confirmar({
+      titulo: `¿Eliminar a ${nombre}?`,
+      mensaje: "El proveedor saldrá del directorio. Las entradas a bodega registradas se conservan.",
+      textoConfirmar: "Eliminar"
+    });
+    if (!ok) return;
+    deleteProveedor(id);
+    onProveedoresUpdated();
+    avisar("Proveedor eliminado");
   };
 
   return (

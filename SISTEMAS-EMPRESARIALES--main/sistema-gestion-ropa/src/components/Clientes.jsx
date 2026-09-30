@@ -1,8 +1,10 @@
 ﻿import React, { useState } from "react";
 import { Users, Plus, Search, Edit, Trash2, Phone, Mail, FileText, ShoppingBag, X, Save } from "lucide-react";
 import { saveCliente, deleteCliente } from "../services/storageService";
+import { useFeedback } from "../feedback/context";
 
 export default function Clientes({ clientes, puedeEliminar = false, onClientesUpdated }) {
+  const { avisar, confirmar } = useFeedback();
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
@@ -44,13 +46,19 @@ export default function Clientes({ clientes, puedeEliminar = false, onClientesUp
     });
     setIsModalOpen(false);
     onClientesUpdated();
+    avisar(editingCliente ? "Cliente actualizado" : "Cliente registrado");
   };
 
-  const handleDelete = (id, nombre) => {
-    if (window.confirm(`¿Eliminar el cliente "${nombre}"?`)) {
-      deleteCliente(id);
-      onClientesUpdated();
-    }
+  const handleDelete = async (id, nombre) => {
+    const ok = await confirmar({
+      titulo: `¿Eliminar a ${nombre}?`,
+      mensaje: "El cliente saldrá del directorio. Sus ventas pasadas se conservan.",
+      textoConfirmar: "Eliminar"
+    });
+    if (!ok) return;
+    deleteCliente(id);
+    onClientesUpdated();
+    avisar("Cliente eliminado");
   };
 
   return (

@@ -1,5 +1,6 @@
 ﻿import React from "react";
 import { Printer, X, CheckCircle, ShoppingBag } from "lucide-react";
+import { formatearFecha } from "../utils/fechas";
 
 export default function TicketModal({ venta, onClose }) {
   if (!venta) return null;
@@ -47,7 +48,7 @@ export default function TicketModal({ venta, onClose }) {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Fecha / Hora:</span>
-              <span>{venta.fecha}</span>
+              <span>{formatearFecha(venta.fecha)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Atendido por:</span>

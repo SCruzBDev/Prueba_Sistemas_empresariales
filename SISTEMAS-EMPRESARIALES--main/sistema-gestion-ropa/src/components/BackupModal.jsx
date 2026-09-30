@@ -1,8 +1,10 @@
 ﻿import React, { useState } from "react";
 import { Download, Upload, RotateCcw, X, Check, AlertTriangle, Database } from "lucide-react";
 import { exportDataJSON, importDataJSON, resetToSeedData } from "../services/storageService";
+import { useFeedback } from "../feedback/context";
 
 export default function BackupModal({ isOpen, onClose, onDataChanged }) {
+  const { confirmar } = useFeedback();
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
@@ -50,8 +52,13 @@ export default function BackupModal({ isOpen, onClose, onDataChanged }) {
     reader.readAsText(file);
   };
 
-  const handleReset = () => {
-    if (window.confirm("¿Seguro que deseas reiniciar todos los datos a la demostración inicial? Se perderán las ventas nuevas.")) {
+  const handleReset = async () => {
+    const ok = await confirmar({
+      titulo: "¿Restablecer los datos de demostración?",
+      mensaje: "Se perderán las ventas, prendas, clientes y proveedores nuevos. Las cuentas de usuario se conservan.",
+      textoConfirmar: "Restablecer"
+    });
+    if (ok) {
       resetToSeedData();
       setMessage("Datos reiniciados al estado inicial.");
       onDataChanged();

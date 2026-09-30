@@ -6,6 +6,7 @@ import {
   eliminarCajero,
   restablecerPasswordCajero
 } from "../services/authService";
+import { useFeedback } from "../feedback/context";
 
 const FORM_VACIO = {
   nombre: "",
@@ -19,6 +20,7 @@ const inputClass =
   "w-full mt-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-500";
 
 export default function Cajeros({ cajeros, onCajerosUpdated }) {
+  const { avisar, confirmar } = useFeedback();
   const [modal, setModal] = useState(null); // null | "crear" | { tipo: "clave", cajero }
   const [form, setForm] = useState(FORM_VACIO);
   const [nuevaClave, setNuevaClave] = useState("");
@@ -43,13 +45,14 @@ export default function Cajeros({ cajeros, onCajerosUpdated }) {
     setModal({ tipo: "clave", cajero });
   };
 
-  const guardar = async (accion) => {
+  const guardar = async (accion, mensajeExito) => {
     setError("");
     setGuardando(true);
     try {
       await accion();
       onCajerosUpdated();
       cerrarModal();
+      avisar(mensajeExito);
     } catch (err) {
       setError(err.message);
       setGuardando(false);
@@ -58,21 +61,27 @@ export default function Cajeros({ cajeros, onCajerosUpdated }) {
 
   const handleCrear = (e) => {
     e.preventDefault();
-    guardar(() => crearCajero(form));
+    guardar(() => crearCajero(form), `Cajero ${form.nombre.trim()} creado`);
   };
 
   const handleClave = (e) => {
     e.preventDefault();
-    guardar(() => restablecerPasswordCajero(modal.cajero.id, nuevaClave));
+    guardar(() => restablecerPasswordCajero(modal.cajero.id, nuevaClave), `Contraseña de ${modal.cajero.nombre} actualizada`);
   };
 
-  const handleEliminar = (cajero) => {
-    if (!window.confirm(`¿Eliminar la cuenta de ${cajero.nombre}? Sus ventas pasadas se conservan en el historial.`)) return;
+  const handleEliminar = async (cajero) => {
+    const ok = await confirmar({
+      titulo: `¿Eliminar la cuenta de ${cajero.nombre}?`,
+      mensaje: "Ya no podrá ingresar al sistema. Sus ventas pasadas se conservan en el historial.",
+      textoConfirmar: "Eliminar cuenta"
+    });
+    if (!ok) return;
     try {
       eliminarCajero(cajero.id);
       onCajerosUpdated();
+      avisar(`Cuenta de ${cajero.nombre} eliminada`);
     } catch (err) {
-      window.alert(err.message);
+      avisar(err.message, "error");
     }
   };
 

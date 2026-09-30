@@ -1,3 +1,5 @@
+import { ahoraLocal } from "../utils/fechas";
+
 const STORAGE_KEYS = {
   PRODUCTOS: "se_tienda_productos",
   CATEGORIAS: "se_tienda_categorias",
@@ -424,7 +426,7 @@ export function registrarEntrada({ productoId, proveedorId, cantidad, nota }) {
     costoUnitario: prod.precioCompra,
     totalCosto: prod.precioCompra * Number(cantidad),
     nota: nota || "Entrada manual de inventario",
-    fecha: new Date().toLocaleString("es-CO")
+    fecha: ahoraLocal()
   };
   
   const entradas = getEntradas();
@@ -477,7 +479,7 @@ export function registrarVenta({ items, clienteId, medioPago, vendedor, vendedor
     total,
     costoTotal,
     utilidad: total - costoTotal,
-    fecha: new Date().toLocaleString("es-CO"),
+    fecha: ahoraLocal(),
     items: [...items]
   };
 
@@ -571,14 +573,4 @@ export function importDataJSON(jsonString) {
 export function resetToSeedData() {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
   initStorage();
-}
-
-// Las ventas semilla guardan "YYYY-MM-DD HH:mm"; las nuevas usan toLocaleString("es-CO") -> "d/m/yyyy, ...".
-export function fechaVentaISO(fecha) {
-  const texto = String(fecha || "");
-  const iso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-  const local = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (local) return `${local[3]}-${local[2].padStart(2, "0")}-${local[1].padStart(2, "0")}`;
-  return "";
 }

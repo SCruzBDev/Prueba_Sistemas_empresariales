@@ -17,6 +17,8 @@ import {
   registrarEntrada, 
   getEntradas 
 } from "../services/storageService";
+import { formatearFecha } from "../utils/fechas";
+import { useFeedback } from "../feedback/context";
 
 export default function Inventario({ 
   productos, 
@@ -24,6 +26,7 @@ export default function Inventario({
   proveedores, 
   onInventarioUpdated 
 }) {
+  const { avisar, confirmar } = useFeedback();
   const [activeTab, setActiveTab] = useState("catalogo"); // "catalogo" | "entradas"
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("todas");
@@ -165,13 +168,19 @@ export default function Inventario({
     saveProducto(productoToSave);
     setIsModalOpen(false);
     onInventarioUpdated();
+    avisar(editingProduct ? "Prenda actualizada" : "Prenda creada");
   };
 
-  const handleDelete = (id, nombre) => {
-    if (window.confirm(`¿Estás seguro de eliminar el producto "${nombre}"?`)) {
-      deleteProducto(id);
-      onInventarioUpdated();
-    }
+  const handleDelete = async (id, nombre) => {
+    const ok = await confirmar({
+      titulo: `¿Eliminar "${nombre}"?`,
+      mensaje: "La prenda se quitará del catálogo. Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar"
+    });
+    if (!ok) return;
+    deleteProducto(id);
+    onInventarioUpdated();
+    avisar("Prenda eliminada");
   };
 
   // Guardar Entrada de Mercancía
@@ -197,9 +206,9 @@ export default function Inventario({
       setIsEntradaModalOpen(false);
       setEntradasList(getEntradas());
       onInventarioUpdated();
-      alert("¡Entrada de mercancía registrada exitosamente! El stock fue sumado.");
+      avisar("Entrada registrada: el stock fue sumado");
     } catch (err) {
-      alert("Error: " + err.message);
+      avisar(err.message, "error");
     }
   };
 
@@ -336,8 +345,68 @@ export default function Inventario({
             </div>
           </div>
 
+          {/* Tarjetas de Productos (móvil) */}
+          <div className="md:hidden space-y-3">
+            {filteredProducts.length === 0 ? (
+              <div className="bg-white p-8 rounded-2xl border border-slate-200/80 text-center text-xs text-slate-400">
+                No se encontraron prendas con los filtros aplicados.
+              </div>
+            ) : (
+              filteredProducts.map((p) => {
+                const isLowStock = p.stock <= p.stockMinimo;
+                return (
+                  <div key={p.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs text-xs space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <span className="font-mono text-[11px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">{p.codigo}</span>
+                        <div className="font-bold text-sm text-slate-900 mt-1">{p.nombre}</div>
+                        <div className="text-[11px] text-slate-500">{p.categoria} · {p.marca}</div>
+                      </div>
+                      <span className={`shrink-0 px-2.5 py-1 rounded-full font-bold flex items-center gap-1 ${
+                        isLowStock ? "bg-rose-100 text-rose-700 border border-rose-200" : "bg-emerald-100 text-emerald-800"
+                      }`}>
+                        {isLowStock && <AlertCircle className="w-3 h-3" />}
+                        {p.stock} uds.
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-xl">
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-slate-400">Talla / color</div>
+                        <div className="font-semibold text-slate-800">{p.talla}</div>
+                        <div className="text-[11px] text-slate-500 truncate">{p.color}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-slate-400">Costo</div>
+                        <div className="font-medium text-slate-700">${p.precioCompra.toLocaleString("es-CO")}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-slate-400">PVP</div>
+                        <div className="font-bold text-slate-900">${p.precioVenta.toLocaleString("es-CO")}</div>
+                        <div className="text-[10px] text-emerald-600">+${(p.precioVenta - p.precioCompra).toLocaleString("es-CO")}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-400">Mínimo: {p.stockMinimo}</span>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleOpenEntrada(p.id)} aria-label="Entrada de mercancía" className="p-2 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 rounded-lg cursor-pointer">
+                          <ArrowDownCircle className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleOpenEditModal(p)} aria-label="Editar prenda" className="p-2 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 rounded-lg cursor-pointer">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDelete(p.id, p.nombre)} aria-label="Eliminar prenda" className="p-2 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg cursor-pointer">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
           {/* Tabla de Productos */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
@@ -445,7 +514,7 @@ export default function Inventario({
           </div>
         </>
       ) : (
-        /* Tabla de Historial de Entradas */
+        /* Historial de Entradas */
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
             <div>
@@ -453,7 +522,24 @@ export default function Inventario({
               <p className="text-xs text-slate-500">Historial de recepciones que han alimentado el inventario local.</p>
             </div>
           </div>
-          <table className="w-full text-left text-xs">
+          <div className="md:hidden divide-y divide-slate-100 text-xs">
+            {entradasList.map((ent) => (
+              <div key={ent.id} className="p-4 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono font-bold text-indigo-600">{ent.id}</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">+{ent.cantidad} uds.</span>
+                </div>
+                <div className="font-semibold text-slate-800">{ent.productoNombre}</div>
+                <div className="text-slate-500">{ent.proveedorNombre}</div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">{formatearFecha(ent.fecha)}</span>
+                  <span className="font-semibold text-slate-800">${(ent.totalCosto || 0).toLocaleString("es-CO")}</span>
+                </div>
+                {ent.nota && <div className="text-[11px] text-slate-400 italic">{ent.nota}</div>}
+              </div>
+            ))}
+          </div>
+          <table className="hidden md:table w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px]">
               <tr>
                 <th className="py-3 px-4">ID Entrada</th>
@@ -479,7 +565,7 @@ export default function Inventario({
                     ${(ent.totalCosto || 0).toLocaleString("es-CO")}
                   </td>
                   <td className="py-3 px-4">
-                    <div className="text-slate-500">{ent.fecha}</div>
+                    <div className="text-slate-500">{formatearFecha(ent.fecha)}</div>
                     <div className="text-[11px] text-slate-400 italic">{ent.nota}</div>
                   </td>
                 </tr>

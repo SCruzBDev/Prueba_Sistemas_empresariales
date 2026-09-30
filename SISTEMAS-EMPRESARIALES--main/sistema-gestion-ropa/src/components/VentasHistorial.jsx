@@ -9,7 +9,7 @@ import {
   Smartphone,
   X
 } from "lucide-react";
-import { fechaVentaISO } from "../services/storageService";
+import { fechaISO, formatearFecha } from "../utils/fechas";
 
 export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
   const isAdmin = user?.rol === "admin";
@@ -49,7 +49,7 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
     const matchesVendedor =
       vendedorFilter === "todos" || v.vendedor === vendedorFilter;
 
-    const fecha = fechaVentaISO(v.fecha);
+    const fecha = fechaISO(v.fecha);
     const matchesDesde = !desde || (fecha && fecha >= desde);
     const matchesHasta = !hasta || (fecha && fecha <= hasta);
 
@@ -171,8 +171,63 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
         </div>
       </div>
 
+      {/* Tarjetas de Ventas (móvil) */}
+      <div className="md:hidden space-y-3">
+        {filteredVentas.length === 0 ? (
+          <div className="bg-white p-8 rounded-2xl border border-slate-200/80 text-center text-xs text-slate-400">
+            No se encontraron registros de ventas.
+          </div>
+        ) : (
+          filteredVentas.map((v) => {
+            const cantPrendas = v.items.reduce((sum, it) => sum + it.cantidad, 0);
+            return (
+              <div key={v.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs text-xs space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-mono font-bold text-indigo-600">{v.id}</div>
+                    <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
+                      <Calendar className="w-3 h-3" />
+                      {formatearFecha(v.fecha)}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-bold text-sm text-slate-900">${v.total.toLocaleString("es-CO")}</div>
+                    {isAdmin && (
+                      <div className="text-[11px] font-semibold text-emerald-600">+${(v.utilidad || 0).toLocaleString("es-CO")}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="p-2.5 bg-slate-50 rounded-xl space-y-1">
+                  <div className="font-semibold text-slate-800">{v.clienteNombre}</div>
+                  {isAdmin && <div className="text-[11px] text-slate-500">Vendido por {v.vendedor}</div>}
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700">
+                      {v.medioPago === "Efectivo" && <Banknote className="w-3 h-3 text-emerald-600" />}
+                      {v.medioPago === "Tarjeta" && <CreditCard className="w-3 h-3 text-indigo-600" />}
+                      {v.medioPago === "Transferencia" && <Smartphone className="w-3 h-3 text-violet-600" />}
+                      {v.medioPago}
+                    </span>
+                    <span className="text-[11px] text-slate-500">{cantPrendas} {cantPrendas === 1 ? "prenda" : "prendas"}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setSelectedVenta(v)} aria-label="Ver detalle" className="p-2 hover:bg-slate-100 text-slate-500 rounded-lg cursor-pointer">
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => onReimprimirTicket(v)} aria-label="Reimprimir ticket" className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg cursor-pointer">
+                      <Printer className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
       {/* Tabla de Ventas */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
@@ -207,7 +262,7 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
                       <td className="py-3 px-4 text-slate-500">
                         <div className="flex items-center gap-1.5">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{v.fecha}</span>
+                          <span>{formatearFecha(v.fecha)}</span>
                         </div>
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-800">
@@ -279,7 +334,7 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
               <div className="grid grid-cols-2 gap-2 text-slate-600 border-b border-slate-100 pb-3">
                 <div>Cliente: <strong className="text-slate-800">{selectedVenta.clienteNombre}</strong></div>
                 <div>Vendedor: <strong className="text-slate-800">{selectedVenta.vendedor}</strong></div>
-                <div>Fecha: <strong className="text-slate-800">{selectedVenta.fecha}</strong></div>
+                <div>Fecha: <strong className="text-slate-800">{formatearFecha(selectedVenta.fecha)}</strong></div>
                 <div>Medio de pago: <strong className="text-slate-800">{selectedVenta.medioPago}</strong></div>
               </div>
 
