@@ -31,8 +31,9 @@ Aplicación web 100% local desarrollada para resolver la problemática de las pe
 ## 🚀 Cómo Ejecutar la Aplicación en Local
 
 ### Pasos:
-1. Instala las dependencias (una sola vez):
+1. Entra a la carpeta del proyecto e instala las dependencias (una sola vez):
    ```bash
+   cd sistema-gestion-ropa
    npm install
    ```
 2. Inicia el servidor de desarrollo:
@@ -48,20 +49,20 @@ Otros comandos: `npm run build` (versión de producción) y `npm run lint` (revi
 ## 🗂️ Estructura del Proyecto
 
 ```
-.
-├── docs/                    # Documentos del proyecto (propuesta e idea desarrollada)
-├── public/                  # Íconos estáticos
-├── src/
-│   ├── components/          # Pantallas: Dashboard, POS, Inventario, Ventas, Clientes, Proveedores, Cajeros...
-│   │   └── auth/            # Selector de acceso y login por rol
-│   ├── config/              # Menús y permisos por rol
-│   ├── feedback/            # Avisos y confirmaciones de la interfaz
-│   ├── services/            # Datos (storageService) y autenticación (authService)
-│   ├── utils/               # Utilidades (formato de fechas)
-│   ├── App.jsx
-│   └── main.jsx
-├── index.html
-└── package.json
+.                                # Raíz del repositorio (documentos Word del proyecto)
+└── sistema-gestion-ropa/        # Aplicación web
+    ├── public/                  # Íconos estáticos
+    ├── src/
+    │   ├── components/          # Pantallas: Dashboard, POS, Inventario, Ventas, Clientes, Proveedores, Cajeros...
+    │   │   └── auth/            # Selector de acceso y login por rol
+    │   ├── config/              # Menús y permisos por rol
+    │   ├── feedback/            # Avisos y confirmaciones de la interfaz
+    │   ├── services/            # Datos (storageService) y autenticación (authService)
+    │   ├── utils/               # Utilidades (formato de fechas)
+    │   ├── App.jsx
+    │   └── main.jsx
+    ├── index.html
+    └── package.json
 ```
 
 ---
