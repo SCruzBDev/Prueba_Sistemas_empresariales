@@ -2,7 +2,6 @@
 import { 
   Plus, 
   Search, 
-  Filter, 
   ArrowDownCircle, 
   Edit, 
   Trash2, 
@@ -30,7 +29,9 @@ export default function Inventario({
   const [activeTab, setActiveTab] = useState("catalogo"); // "catalogo" | "entradas"
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("todas");
-  const [filterStockCritico, setFilterStockCritico] = useState(false);
+  const [selectedMarca, setSelectedMarca] = useState("todas");
+  const [selectedTalla, setSelectedTalla] = useState("todas");
+  const [estadoStock, setEstadoStock] = useState("todos"); // "todos" | "agotado" | "critico" | "normal"
 
   // Modal Crear / Editar Producto
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,11 +72,38 @@ export default function Inventario({
     const matchesCategory = 
       selectedCategory === "todas" || p.categoriaId === selectedCategory;
 
-    const matchesCritico = 
-      !filterStockCritico || p.stock <= p.stockMinimo;
+    const matchesMarca =
+      selectedMarca === "todas" || p.marca === selectedMarca;
 
-    return matchesSearch && matchesCategory && matchesCritico;
+    const matchesTalla =
+      selectedTalla === "todas" || p.talla === selectedTalla;
+
+    const matchesEstado =
+      estadoStock === "todos" ||
+      (estadoStock === "agotado" && p.stock <= 0) ||
+      (estadoStock === "critico" && p.stock > 0 && p.stock <= p.stockMinimo) ||
+      (estadoStock === "normal" && p.stock > p.stockMinimo);
+
+    return matchesSearch && matchesCategory && matchesMarca && matchesTalla && matchesEstado;
   });
+
+  const marcas = [...new Set(productos.map((p) => p.marca).filter(Boolean))].sort();
+  const tallas = [...new Set(productos.map((p) => p.talla).filter(Boolean))].sort();
+
+  const filtrosActivos =
+    (searchTerm ? 1 : 0) +
+    (selectedCategory !== "todas" ? 1 : 0) +
+    (selectedMarca !== "todas" ? 1 : 0) +
+    (selectedTalla !== "todas" ? 1 : 0) +
+    (estadoStock !== "todos" ? 1 : 0);
+
+  const limpiarFiltros = () => {
+    setSearchTerm("");
+    setSelectedCategory("todas");
+    setSelectedMarca("todas");
+    setSelectedTalla("todas");
+    setEstadoStock("todos");
+  };
 
   const handleOpenCreateModal = () => {
     setEditingProduct(null);
@@ -240,10 +268,8 @@ export default function Inventario({
       {activeTab === "catalogo" ? (
         <>
           {/* Filtros y Buscador */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-center gap-3">
-            
-            {/* Buscador */}
-            <div className="relative flex-1 w-full">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+            <div className="relative w-full">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
@@ -254,35 +280,62 @@ export default function Inventario({
               />
             </div>
 
-            {/* Selector de Categoría */}
-            <div className="w-full md:w-auto flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full md:w-48 py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer"
-              >
-                <option value="todas">Todas las categorías</option>
-                {categorias.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.nombre}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <label className="text-[10px] font-bold uppercase text-slate-400">
+                Categoría
+                <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="mt-1 w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                  <option value="todas">Todas</option>
+                  {categorias.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-[10px] font-bold uppercase text-slate-400">
+                Marca
+                <select value={selectedMarca} onChange={(e) => setSelectedMarca(e.target.value)} className="mt-1 w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                  <option value="todas">Todas</option>
+                  {marcas.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-[10px] font-bold uppercase text-slate-400">
+                Talla
+                <select value={selectedTalla} onChange={(e) => setSelectedTalla(e.target.value)} className="mt-1 w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                  <option value="todas">Todas</option>
+                  {tallas.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-[10px] font-bold uppercase text-slate-400">
+                Estado de stock
+                <select value={estadoStock} onChange={(e) => setEstadoStock(e.target.value)} className="mt-1 w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                  <option value="todos">Todos</option>
+                  <option value="agotado">Agotado</option>
+                  <option value="critico">Stock crítico</option>
+                  <option value="normal">Stock normal</option>
+                </select>
+              </label>
             </div>
 
-            {/* Toggle Stock Crítico */}
-            <button
-              onClick={() => setFilterStockCritico(!filterStockCritico)}
-              className={`w-full md:w-auto flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
-                filterStockCritico
-                  ? "bg-rose-500 text-white border-rose-600"
-                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              <AlertCircle className="w-4 h-4" />
-              Solo Stock Crítico
-            </button>
+            <div className="flex items-center justify-between text-[11px] text-slate-500">
+              <span>
+                Mostrando <strong className="text-slate-700">{filteredProducts.length}</strong> de {productos.length} prendas
+              </span>
+              {filtrosActivos > 0 && (
+                <button
+                  onClick={limpiarFiltros}
+                  className="flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Limpiar filtros ({filtrosActivos})
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Tabla de Productos */}

@@ -3,8 +3,6 @@ import { Download, Upload, RotateCcw, X, Check, AlertTriangle, Database } from "
 import { exportDataJSON, importDataJSON, resetToSeedData } from "../services/storageService";
 
 export default function BackupModal({ isOpen, onClose, onDataChanged }) {
-  if (!isOpen) return null;
-
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
@@ -63,6 +61,8 @@ export default function BackupModal({ isOpen, onClose, onDataChanged }) {
       }, 1500);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">

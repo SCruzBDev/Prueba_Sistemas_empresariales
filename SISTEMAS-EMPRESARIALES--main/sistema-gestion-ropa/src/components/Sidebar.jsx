@@ -1,47 +1,25 @@
 ﻿import React from "react";
 import { 
-  LayoutDashboard, 
   ShoppingBag, 
-  Layers, 
-  Receipt, 
-  Users, 
-  Truck, 
   Database, 
   ShieldCheck, 
   UserCheck, 
-  AlertCircle 
+  AlertCircle,
+  LogOut
 } from "lucide-react";
+import { MENUS } from "../config/menus";
 
 export default function Sidebar({ 
   currentTab, 
   setCurrentTab, 
   user, 
-  setUser, 
+  onLogout,
   stockBajoCount, 
   onOpenBackup 
 }) {
-
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard & KPIs", icon: LayoutDashboard, roleRequired: "admin" },
-    { id: "pos", label: "Punto de Venta (POS)", icon: ShoppingBag, badge: "Vender" },
-    { id: "inventario", label: "Inventario de Ropa", icon: Layers, alertCount: stockBajoCount },
-    { id: "ventas", label: "Historial de Ventas", icon: Receipt },
-    { id: "clientes", label: "Clientes", icon: Users },
-    { id: "proveedores", label: "Proveedores & Entradas", icon: Truck, roleRequired: "admin" },
-  ];
-
-  const toggleRole = () => {
-    const newRole = user.rol === "admin" ? "cajero" : "admin";
-    const updated = {
-      ...user,
-      rol: newRole,
-      nombre: newRole === "admin" ? "Matias Arango (Admin)" : "Sebastián Cruz (Cajero)"
-    };
-    setUser(updated);
-    if (newRole === "cajero" && (currentTab === "dashboard" || currentTab === "proveedores")) {
-      setCurrentTab("pos");
-    }
-  };
+  const isAdmin = user.rol === "admin";
+  const menuItems = MENUS[user.rol] || [];
+  const alertas = { stockBajoCount };
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800 select-none">
@@ -59,11 +37,11 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Role Switcher Pill */}
+      {/* Usuario en sesión */}
       <div className="px-4 py-3 border-b border-slate-800/60 bg-slate-950/40">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs">
-            {user.rol === "admin" ? (
+            {isAdmin ? (
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
             ) : (
               <UserCheck className="w-4 h-4 text-amber-400" />
@@ -71,18 +49,19 @@ export default function Sidebar({
             <div>
               <div className="text-white font-medium truncate max-w-[110px] text-xs">{user.nombre}</div>
               <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded ${
-                user.rol === "admin" ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"
+                isAdmin ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"
               }`}>
-                {user.rol === "admin" ? "Administrador" : "Cajero"}
+                {isAdmin ? "Administrador" : "Cajero"}
               </span>
             </div>
           </div>
           <button
-            onClick={toggleRole}
-            title="Cambiar rol para simular permisos"
-            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded-md border border-slate-700 transition-colors cursor-pointer"
+            onClick={onLogout}
+            title="Cerrar sesión"
+            className="flex items-center gap-1 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded-md border border-slate-700 transition-colors cursor-pointer"
           >
-            Cambiar
+            <LogOut className="w-3 h-3" />
+            Salir
           </button>
         </div>
       </div>
@@ -92,23 +71,6 @@ export default function Sidebar({
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
-          const isRestricted = item.roleRequired === "admin" && user.rol !== "admin";
-
-          if (isRestricted) {
-            return (
-              <div
-                key={item.id}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs text-slate-600 cursor-not-allowed opacity-60"
-                title="Requiere rol de Administrador"
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </div>
-                <span className="text-[10px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded">Admin</span>
-              </div>
-            );
-          }
 
           return (
             <button
@@ -125,10 +87,10 @@ export default function Sidebar({
                 <span>{item.label}</span>
               </div>
 
-              {item.alertCount > 0 && (
+              {alertas[item.alertKey] > 0 && (
                 <span className="flex items-center gap-1 text-[10px] font-bold bg-rose-500 text-white px-2 py-0.5 rounded-full animate-pulse">
                   <AlertCircle className="w-3 h-3" />
-                  {item.alertCount}
+                  {alertas[item.alertKey]}
                 </span>
               )}
 
@@ -146,6 +108,7 @@ export default function Sidebar({
 
       {/* Backup & System Info */}
       <div className="p-3 border-t border-slate-800 space-y-2">
+        {isAdmin && (
         <button
           onClick={onOpenBackup}
           className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700/80 transition-colors cursor-pointer"
@@ -153,6 +116,7 @@ export default function Sidebar({
           <Database className="w-3.5 h-3.5 text-indigo-400" />
           <span>Respaldo de Datos (JSON)</span>
         </button>
+        )}
 
         <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80 text-[10px] text-slate-400 space-y-1">
           <div className="flex justify-between items-center text-slate-300 font-medium">

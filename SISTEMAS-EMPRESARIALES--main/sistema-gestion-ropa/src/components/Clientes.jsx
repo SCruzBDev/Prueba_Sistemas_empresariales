@@ -2,7 +2,7 @@
 import { Users, Plus, Search, Edit, Trash2, Phone, Mail, FileText, ShoppingBag, X, Save } from "lucide-react";
 import { saveCliente, deleteCliente } from "../services/storageService";
 
-export default function Clientes({ clientes, onClientesUpdated }) {
+export default function Clientes({ clientes, puedeEliminar = false, onClientesUpdated }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
@@ -111,12 +111,14 @@ export default function Clientes({ clientes, onClientesUpdated }) {
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(cli.id, cli.nombre)}
-                      className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-md cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {puedeEliminar && (
+                      <button
+                        onClick={() => handleDelete(cli.id, cli.nombre)}
+                        className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-md cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

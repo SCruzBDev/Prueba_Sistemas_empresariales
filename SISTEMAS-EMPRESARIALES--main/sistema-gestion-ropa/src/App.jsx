@@ -8,6 +8,10 @@ import Clientes from "./components/Clientes";
 import Proveedores from "./components/Proveedores";
 import TicketModal from "./components/TicketModal";
 import BackupModal from "./components/BackupModal";
+import Cajeros from "./components/Cajeros";
+import Acceso from "./components/auth/Acceso";
+import Login from "./components/auth/Login";
+import { pestanasPermitidas, pestanaInicial } from "./config/menus";
 import { 
   initStorage, 
   getProductos, 
@@ -15,16 +19,16 @@ import {
   getClientes, 
   getProveedores, 
   getVentas, 
-  getCurrentUser, 
-  setCurrentUser,
   getDashboardData 
 } from "./services/storageService";
+import { initUsuarios, getSesion, cerrarSesion, getCajeros } from "./services/authService";
 import { Menu, ShoppingBag } from "lucide-react";
 
 export default function App() {
   const [initialized, setInitialized] = useState(false);
-  const [user, setUser] = useState({ nombre: "Matias Arango", email: "matias.arango@upb.edu.co", rol: "admin" });
-  const [currentTab, setCurrentTab] = useState("dashboard"); // "dashboard" | "pos" | "inventario" | "ventas" | "clientes" | "proveedores"
+  const [user, setUser] = useState(null);
+  const [ruta, setRuta] = useState(() => window.location.hash);
+  const [currentTab, setCurrentTab] = useState("pos");
 
   // App Data
   const [productos, setProductos] = useState([]);
@@ -32,6 +36,7 @@ export default function App() {
   const [clientes, setClientes] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [ventas, setVentas] = useState([]);
+  const [cajeros, setCajeros] = useState([]);
   const [kpiData, setKpiData] = useState({
     totalProductos: 0,
     valorInventario: 0,
@@ -57,7 +62,7 @@ export default function App() {
     const provs = getProveedores();
     const vts = getVentas();
     const kpis = getDashboardData();
-    const curUser = getCurrentUser();
+    const sesion = getSesion();
 
     setProductos(prods);
     setCategorias(cats);
@@ -65,18 +70,45 @@ export default function App() {
     setProveedores(provs);
     setVentas(vts);
     setKpiData(kpis);
-    setUser(curUser);
+    setCajeros(getCajeros());
+    if (!sesion) setUser(null);
   };
 
   useEffect(() => {
+    let activo = true;
     initStorage();
-    refreshAllData();
-    setInitialized(true);
+    initUsuarios().then(() => {
+      if (!activo) return;
+      const sesion = getSesion();
+      if (sesion) {
+        refreshAllData();
+        setCurrentTab(pestanaInicial(sesion.rol));
+        setUser(sesion);
+      }
+      setInitialized(true);
+    });
+    const onHashChange = () => setRuta(window.location.hash);
+    window.addEventListener("hashchange", onHashChange);
+    return () => {
+      activo = false;
+      window.removeEventListener("hashchange", onHashChange);
+    };
   }, []);
 
-  const handleUpdateUser = (newUser) => {
-    setCurrentUser(newUser);
-    setUser(newUser);
+  const handleLogin = (usuario) => {
+    refreshAllData();
+    setCurrentTab(pestanaInicial(usuario.rol));
+    setUser(usuario);
+    window.location.hash = "#/";
+  };
+
+  const handleLogout = () => {
+    const rol = user?.rol || "cajero";
+    cerrarSesion();
+    setUser(null);
+    setTicketVenta(null);
+    setIsBackupOpen(false);
+    window.location.hash = `#/${rol}`;
   };
 
   const handleVentaCompletada = (venta) => {
@@ -94,6 +126,16 @@ export default function App() {
       </div>
     );
   }
+
+  if (!user) {
+    if (ruta === "#/admin") return <Login key="admin" rol="admin" onLogin={handleLogin} />;
+    if (ruta === "#/cajero") return <Login key="cajero" rol="cajero" onLogin={handleLogin} />;
+    return <Acceso />;
+  }
+
+  const isAdmin = user.rol === "admin";
+  const tab = pestanasPermitidas(user.rol).includes(currentTab) ? currentTab : pestanaInicial(user.rol);
+  const ventasVisibles = isAdmin ? ventas : ventas.filter((v) => v.vendedorId === user.id);
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row text-slate-900 font-sans">
@@ -115,13 +157,13 @@ export default function App() {
       {/* Sidebar Desktop / Mobile Drawer */}
       <div className={`${mobileMenuOpen ? "block" : "hidden"} md:block z-40`}>
         <Sidebar
-          currentTab={currentTab}
-          setCurrentTab={(tab) => {
-            setCurrentTab(tab);
+          currentTab={tab}
+          setCurrentTab={(nueva) => {
+            setCurrentTab(nueva);
             setMobileMenuOpen(false);
           }}
           user={user}
-          setUser={handleUpdateUser}
+          onLogout={handleLogout}
           stockBajoCount={kpiData.stockBajoCount}
           onOpenBackup={() => setIsBackupOpen(true)}
         />
@@ -134,12 +176,13 @@ export default function App() {
         <header className="bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shrink-0 shadow-2xs">
           <div>
             <h2 className="text-base font-bold text-slate-900 capitalize">
-              {currentTab === "dashboard" && "Dashboard General"}
-              {currentTab === "pos" && "Punto de Venta (POS)"}
-              {currentTab === "inventario" && "Inventario de Ropa"}
-              {currentTab === "ventas" && "Historial de Ventas"}
-              {currentTab === "clientes" && "Directorio de Clientes"}
-              {currentTab === "proveedores" && "Proveedores y Distribución"}
+              {tab === "dashboard" && "Dashboard General"}
+              {tab === "pos" && "Punto de Venta (POS)"}
+              {tab === "inventario" && "Inventario de Ropa"}
+              {tab === "ventas" && (isAdmin ? "Historial de Ventas" : "Mis Ventas")}
+              {tab === "clientes" && "Directorio de Clientes"}
+              {tab === "proveedores" && "Proveedores y Distribución"}
+              {tab === "cajeros" && "Gestión de Cajeros"}
             </h2>
             <p className="text-[11px] text-slate-500">
               {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
@@ -158,7 +201,7 @@ export default function App() {
 
         {/* View Switcher */}
         <div className="p-6">
-          {currentTab === "dashboard" && (
+          {tab === "dashboard" && (
             <Dashboard
               kpiData={kpiData}
               onNavigateToPOS={() => setCurrentTab("pos")}
@@ -166,7 +209,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === "pos" && (
+          {tab === "pos" && (
             <POS
               productos={productos}
               clientes={clientes}
@@ -175,7 +218,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === "inventario" && (
+          {tab === "inventario" && (
             <Inventario
               productos={productos}
               categorias={categorias}
@@ -184,26 +227,34 @@ export default function App() {
             />
           )}
 
-          {currentTab === "ventas" && (
+          {tab === "ventas" && (
             <VentasHistorial
-              ventas={ventas}
+              ventas={ventasVisibles}
               user={user}
               onReimprimirTicket={(v) => setTicketVenta(v)}
             />
           )}
 
-          {currentTab === "clientes" && (
+          {tab === "clientes" && (
             <Clientes
               clientes={clientes}
+              puedeEliminar={isAdmin}
               onClientesUpdated={refreshAllData}
             />
           )}
 
-          {currentTab === "proveedores" && (
+          {tab === "proveedores" && (
             <Proveedores
               proveedores={proveedores}
               onProveedoresUpdated={refreshAllData}
               onOpenEntradaMercancia={() => setCurrentTab("inventario")}
+            />
+          )}
+
+          {tab === "cajeros" && (
+            <Cajeros
+              cajeros={cajeros}
+              onCajerosUpdated={refreshAllData}
             />
           )}
         </div>
@@ -217,11 +268,13 @@ export default function App() {
       />
 
       {/* Backup & Restore Modal */}
-      <BackupModal
-        isOpen={isBackupOpen}
-        onClose={() => setIsBackupOpen(false)}
-        onDataChanged={refreshAllData}
-      />
+      {isAdmin && (
+        <BackupModal
+          isOpen={isBackupOpen}
+          onClose={() => setIsBackupOpen(false)}
+          onDataChanged={refreshAllData}
+        />
+      )}
 
     </div>
   );

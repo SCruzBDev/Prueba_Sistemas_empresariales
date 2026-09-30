@@ -145,7 +145,8 @@ export default function POS({
         items: cart,
         clienteId: selectedClienteId || null,
         medioPago,
-        vendedor: user?.nombre || "Cajero"
+        vendedor: user?.nombre ? `${user.nombre} (${user.rol === "admin" ? "Admin" : "Cajero"})` : "Cajero",
+        vendedorId: user?.id
       });
 
       // Limpiar carrito y notificar al padre para abrir el ticket

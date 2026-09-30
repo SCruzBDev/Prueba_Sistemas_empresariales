@@ -4,8 +4,7 @@ const STORAGE_KEYS = {
   CLIENTES: "se_tienda_clientes",
   PROVEEDORES: "se_tienda_proveedores",
   VENTAS: "se_tienda_ventas",
-  ENTRADAS: "se_tienda_entradas",
-  USUARIO_ACTUAL: "se_tienda_current_user"
+  ENTRADAS: "se_tienda_entradas"
 };
 
 const SEED_CATEGORIAS = [
@@ -184,6 +183,7 @@ const SEED_VENTAS = [
     clienteId: "cli-1",
     clienteNombre: "Valentina Restrepo",
     vendedor: "Matias Arango (Admin)",
+    vendedorId: "usr-admin-1",
     medioPago: "Tarjeta",
     total: 218900,
     costoTotal: 110000,
@@ -199,6 +199,7 @@ const SEED_VENTAS = [
     clienteId: "cli-2",
     clienteNombre: "Camilo Montoya Giraldo",
     vendedor: "Sebastián Cruz (Cajero)",
+    vendedorId: "usr-cajero-1",
     medioPago: "Efectivo",
     total: 99800,
     costoTotal: 44000,
@@ -227,6 +228,7 @@ const SEED_VENTAS = [
     clienteId: "cli-1",
     clienteNombre: "Valentina Restrepo",
     vendedor: "Federico Martínez (Cajero)",
+    vendedorId: "usr-cajero-2",
     medioPago: "Tarjeta",
     total: 189000,
     costoTotal: 95000,
@@ -302,25 +304,6 @@ export function initStorage() {
   if (!localStorage.getItem(STORAGE_KEYS.ENTRADAS)) {
     setItem(STORAGE_KEYS.ENTRADAS, SEED_ENTRADAS);
   }
-  if (!localStorage.getItem(STORAGE_KEYS.USUARIO_ACTUAL)) {
-    setItem(STORAGE_KEYS.USUARIO_ACTUAL, {
-      nombre: "Matias Arango",
-      email: "matias.arango@upb.edu.co",
-      rol: "admin"
-    });
-  }
-}
-
-export function getCurrentUser() {
-  return getItem(STORAGE_KEYS.USUARIO_ACTUAL, {
-    nombre: "Matias Arango",
-    email: "matias.arango@upb.edu.co",
-    rol: "admin"
-  });
-}
-
-export function setCurrentUser(user) {
-  setItem(STORAGE_KEYS.USUARIO_ACTUAL, user);
 }
 
 export function getCategorias() {
@@ -455,7 +438,7 @@ export function getVentas() {
   return getItem(STORAGE_KEYS.VENTAS, SEED_VENTAS);
 }
 
-export function registrarVenta({ items, clienteId, medioPago, vendedor }) {
+export function registrarVenta({ items, clienteId, medioPago, vendedor, vendedorId }) {
   const productos = getProductos();
   let total = 0;
   let costoTotal = 0;
@@ -489,6 +472,7 @@ export function registrarVenta({ items, clienteId, medioPago, vendedor }) {
     clienteId: clienteId || null,
     clienteNombre,
     vendedor: vendedor || "Cajero Principal",
+    vendedorId: vendedorId || null,
     medioPago: medioPago || "Efectivo",
     total,
     costoTotal,
@@ -585,6 +569,16 @@ export function importDataJSON(jsonString) {
 }
 
 export function resetToSeedData() {
-  localStorage.clear();
+  Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
   initStorage();
+}
+
+// Las ventas semilla guardan "YYYY-MM-DD HH:mm"; las nuevas usan toLocaleString("es-CO") -> "d/m/yyyy, ...".
+export function fechaVentaISO(fecha) {
+  const texto = String(fecha || "");
+  const iso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const local = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (local) return `${local[3]}-${local[2].padStart(2, "0")}-${local[1].padStart(2, "0")}`;
+  return "";
 }

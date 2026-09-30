@@ -22,7 +22,9 @@ Aplicación web 100% local desarrollada para resolver la problemática de las pe
 6. **Clientes y Proveedores:** Directorio de compradores habituales y distribuidores mayoristas de confección.
 7. **Entradas a Bodega:** Registro de recepción de lotes de mercancía que suman existencias automáticamente al inventario.
 8. **Respaldo de Datos (JSON):** Descarga y carga de datos en formato `.json` para respaldar o transferir la información fácilmente.
-9. **Simulador de Roles:** Alternar entre perfil de *Administrador* y *Cajero* para simular permisos en tienda.
+9. **Accesos separados por rol:** Login independiente para *Administrador* (`#/admin`) y *Cajero* (`#/cajero`), cada uno con su propio menú y permisos.
+10. **Gestión de cajeros:** El administrador crea y elimina cuentas de cajero y puede restablecer su contraseña.
+11. **Recuperación de contraseña:** Mediante pregunta de seguridad, desde el propio login.
 
 ---
 
@@ -38,6 +40,23 @@ Aplicación web 100% local desarrollada para resolver la problemática de las pe
    npm run dev
    ```
 3. Abre en tu navegador la dirección que indica la consola (usualmente `http://localhost:5173`).
+
+---
+
+## 🔐 Accesos y Roles
+
+| Rol | Ruta | Correo demo | Contraseña demo |
+|-----|------|-------------|-----------------|
+| Administrador | `#/admin` | `matias.arango@upb.edu.co` | `Admin2026*` |
+| Cajero | `#/cajero` | `sebastian.cruz@upb.edu.co` | `Cajero2026*` |
+
+La respuesta de seguridad de las cuentas demo es `boutique`. Cambia estas credenciales antes de usar el sistema con datos reales.
+
+- **Administrador:** Dashboard, POS, inventario (con filtros por categoría, marca, talla y estado de stock), historial de ventas (filtros por medio de pago, cajero y fechas), clientes, proveedores, cajeros y respaldo de datos.
+- **Cajero:** solo POS, *Mis Ventas* (únicamente las suyas y sin utilidad) y Clientes (sin eliminar).
+- La sesión dura mientras la pestaña esté abierta. Las contraseñas y respuestas se guardan con hash SHA-256 + salt.
+
+> **Limitación:** al ser una app 100% local (sin servidor), los permisos se aplican en la interfaz y los datos viven en el `localStorage` del navegador. Sirve para separar flujos y evitar errores operativos, pero no es una barrera de seguridad frente a alguien con acceso a las herramientas del navegador. Para eso se requeriría un backend.
 
 ---
 

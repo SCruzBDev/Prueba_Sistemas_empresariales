@@ -2,20 +2,41 @@
 import { 
   Receipt, 
   Search, 
-  Filter, 
   Printer, 
   Eye, 
   Calendar, 
   CreditCard, 
   Banknote, 
   Smartphone,
-  TrendingUp
+  X
 } from "lucide-react";
+import { fechaVentaISO } from "../services/storageService";
 
 export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
+  const isAdmin = user?.rol === "admin";
   const [searchTerm, setSearchTerm] = useState("");
   const [medioFilter, setMedioFilter] = useState("todos");
+  const [vendedorFilter, setVendedorFilter] = useState("todos");
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
   const [selectedVenta, setSelectedVenta] = useState(null);
+
+  const vendedores = [...new Set(ventas.map((v) => v.vendedor))].sort();
+
+  const filtrosActivos =
+    (searchTerm ? 1 : 0) +
+    (medioFilter !== "todos" ? 1 : 0) +
+    (vendedorFilter !== "todos" ? 1 : 0) +
+    (desde ? 1 : 0) +
+    (hasta ? 1 : 0);
+
+  const limpiarFiltros = () => {
+    setSearchTerm("");
+    setMedioFilter("todos");
+    setVendedorFilter("todos");
+    setDesde("");
+    setHasta("");
+  };
 
   const filteredVentas = ventas.filter((v) => {
     const matchesSearch = 
@@ -26,7 +47,14 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
     const matchesMedio = 
       medioFilter === "todos" || v.medioPago === medioFilter;
 
-    return matchesSearch && matchesMedio;
+    const matchesVendedor =
+      vendedorFilter === "todos" || v.vendedor === vendedorFilter;
+
+    const fecha = fechaVentaISO(v.fecha);
+    const matchesDesde = !desde || (fecha && fecha >= desde);
+    const matchesHasta = !hasta || (fecha && fecha <= hasta);
+
+    return matchesSearch && matchesMedio && matchesVendedor && matchesDesde && matchesHasta;
   });
 
   const totalRecaudado = filteredVentas.reduce((acc, v) => acc + v.total, 0);
@@ -38,7 +66,7 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Historial y Auditoría de Ventas</h2>
+          <h2 className="text-xl font-bold text-slate-900">{isAdmin ? "Historial y Auditoría de Ventas" : "Mis Ventas"}</h2>
           <p className="text-xs text-slate-500">
             Registro detallado de transacciones comerciales, medios de pago y reimpresión de comprobantes.
           </p>
@@ -50,7 +78,7 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Filtrado</span>
             <span className="text-sm font-bold text-slate-900">${totalRecaudado.toLocaleString("es-CO")}</span>
           </div>
-          {user?.rol === "admin" && (
+          {isAdmin && (
             <div className="px-4 py-2 bg-indigo-50 rounded-xl border border-indigo-100">
               <span className="text-[10px] uppercase font-bold text-indigo-500 block">Utilidad Bruta</span>
               <span className="text-sm font-bold text-indigo-700">${totalUtilidad.toLocaleString("es-CO")}</span>
@@ -60,30 +88,87 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
       </div>
 
       {/* Buscador y Filtros */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative flex-1 w-full">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+        <div className="relative w-full">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar por comprobante (ej: VTA-1001), cliente o vendedor..."
+            placeholder={isAdmin
+              ? "Buscar por comprobante (ej: VTA-1001), cliente o vendedor..."
+              : "Buscar por comprobante (ej: VTA-1001) o cliente..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-500 transition-colors"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-          <select
-            value={medioFilter}
-            onChange={(e) => setMedioFilter(e.target.value)}
-            className="w-full sm:w-44 py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500"
-          >
-            <option value="todos">Todos los medios de pago</option>
-            <option value="Efectivo">Efectivo</option>
-            <option value="Tarjeta">Tarjeta</option>
-            <option value="Transferencia">Transferencia</option>
-          </select>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isAdmin ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3`}>
+          <label className="text-[10px] font-bold uppercase text-slate-400">
+            Medio de pago
+            <select
+              value={medioFilter}
+              onChange={(e) => setMedioFilter(e.target.value)}
+              className="mt-1 w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="todos">Todos</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Tarjeta">Tarjeta</option>
+              <option value="Transferencia">Transferencia</option>
+            </select>
+          </label>
+
+          {isAdmin && (
+            <label className="text-[10px] font-bold uppercase text-slate-400">
+              Vendedor / Cajero
+              <select
+                value={vendedorFilter}
+                onChange={(e) => setVendedorFilter(e.target.value)}
+                className="mt-1 w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500"
+              >
+                <option value="todos">Todos</option>
+                {vendedores.map((nombre) => (
+                  <option key={nombre} value={nombre}>{nombre}</option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          <label className="text-[10px] font-bold uppercase text-slate-400">
+            Desde
+            <input
+              type="date"
+              value={desde}
+              max={hasta || undefined}
+              onChange={(e) => setDesde(e.target.value)}
+              className="mt-1 w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500"
+            />
+          </label>
+
+          <label className="text-[10px] font-bold uppercase text-slate-400">
+            Hasta
+            <input
+              type="date"
+              value={hasta}
+              min={desde || undefined}
+              onChange={(e) => setHasta(e.target.value)}
+              className="mt-1 w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-indigo-500"
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center justify-between text-[11px] text-slate-500">
+          <span>
+            Mostrando <strong className="text-slate-700">{filteredVentas.length}</strong> de {ventas.length} ventas
+          </span>
+          {filtrosActivos > 0 && (
+            <button
+              onClick={limpiarFiltros}
+              className="flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              Limpiar filtros ({filtrosActivos})
+            </button>
+          )}
         </div>
       </div>
 
@@ -100,14 +185,14 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
                 <th className="py-3.5 px-4">Prendas</th>
                 <th className="py-3.5 px-4">Medio Pago</th>
                 <th className="py-3.5 px-4">Total Venta</th>
-                {user?.rol === "admin" && <th className="py-3.5 px-4">Utilidad</th>}
+                {isAdmin && <th className="py-3.5 px-4">Utilidad</th>}
                 <th className="py-3.5 px-4 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredVentas.length === 0 ? (
                 <tr>
-                  <td colSpan={user?.rol === "admin" ? "9" : "8"} className="py-8 text-center text-slate-400">
+                  <td colSpan={isAdmin ? "9" : "8"} className="py-8 text-center text-slate-400">
                     No se encontraron registros de ventas.
                   </td>
                 </tr>
@@ -148,7 +233,7 @@ export default function VentasHistorial({ ventas, user, onReimprimirTicket }) {
                       <td className="py-3 px-4 font-bold text-slate-900">
                         ${v.total.toLocaleString("es-CO")}
                       </td>
-                      {user?.rol === "admin" && (
+                      {isAdmin && (
                         <td className="py-3 px-4 font-semibold text-emerald-600">
                           +${(v.utilidad || 0).toLocaleString("es-CO")}
                         </td>
